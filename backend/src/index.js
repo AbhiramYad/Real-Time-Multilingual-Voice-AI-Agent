@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const http = require('http');
+const { initializeSocket } = require('./socket');
 
 // Load environment variables
 dotenv.config();
@@ -26,10 +28,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Create HTTP server and attach Socket.IO
+const server = http.createServer(app);
+initializeSocket(server);
+
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`\n🚀 Voice AI Backend running on http://localhost:${PORT}`);
-  console.log(`📡 Health check: http://localhost:${PORT}/api/health\n`);
+  console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`🔌 WebSocket: ws://localhost:${PORT}\n`);
 });
 
-module.exports = app;
+module.exports = { app, server };

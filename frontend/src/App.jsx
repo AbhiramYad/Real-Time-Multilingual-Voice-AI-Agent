@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useSocket } from './hooks/useSocket';
+import ChatPanel from './components/ChatPanel';
 import './App.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -6,6 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 function App() {
   const [backendStatus, setBackendStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { isConnected, sessionId, messages, language, sendText, changeLanguage } = useSocket();
 
   useEffect(() => {
     checkBackendHealth();
@@ -33,9 +36,9 @@ function App() {
           <div className="app-logo-icon">🏥</div>
           <span className="app-logo-text">VoiceAI Clinic</span>
         </div>
-        <div className={`app-status ${isOnline ? '' : 'offline'}`}>
+        <div className={`app-status ${isConnected ? '' : 'offline'}`}>
           <span className="status-dot"></span>
-          {loading ? 'Connecting...' : isOnline ? 'System Online' : 'Backend Offline'}
+          {loading ? 'Connecting...' : isConnected ? 'System Online' : 'Backend Offline'}
         </div>
       </header>
 
@@ -54,15 +57,16 @@ function App() {
         </p>
       </section>
 
-      {/* Latency Target */}
-      <div className="latency-banner animate-fade-in-delay-1">
-        <div className="latency-value">
-          &lt;450<span>ms</span>
-        </div>
-        <div className="latency-label">
-          <h4>End-to-End Response Latency</h4>
-          <p>Speech end → STT → Agent → Tools → TTS → First audio</p>
-        </div>
+      {/* Chat Panel */}
+      <div className="container animate-fade-in-delay-1">
+        <ChatPanel
+          messages={messages}
+          onSendText={sendText}
+          language={language}
+          onChangeLanguage={changeLanguage}
+          isConnected={isConnected}
+          sessionId={sessionId}
+        />
       </div>
 
       {/* Features */}
