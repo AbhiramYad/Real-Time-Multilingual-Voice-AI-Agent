@@ -33,11 +33,13 @@ app.get('/api/health', (req, res) => {
 const server = http.createServer(app);
 initializeSocket(server);
 
-// Initialize services
-deepgramService.initialize();
-
 const dbService = require('./services/db');
 const redisService = require('./services/redis');
+const geminiService = require('./services/gemini');
+
+// Initialize services
+deepgramService.initialize();
+geminiService.initialize();
 
 // Asynchronously connect database and cache
 (async () => {

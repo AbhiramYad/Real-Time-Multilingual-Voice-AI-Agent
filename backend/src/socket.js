@@ -1,6 +1,7 @@
 const { Server } = require('socket.io');
 const deepgramService = require('./services/deepgram');
 const redisService = require('./services/redis');
+const geminiService = require('./services/gemini');
 
 /** @type {Server} */
 let io;
@@ -110,7 +111,7 @@ async function handleAudioStart(socket) {
     socket.id,
     session?.language || 'en',
     // onTranscript callback
-    (transcript) => {
+    async (transcript) => {
       socket.emit('transcript', {
         text: transcript.text,
         isFinal: transcript.isFinal,
@@ -120,6 +121,24 @@ async function handleAudioStart(socket) {
         isUtteranceEnd: transcript.isUtteranceEnd || false,
         timestamp: transcript.timestamp
       });
+
+      // Process with Gemini if we have a final spoken utterance
+      if (transcript.isFinal && transcript.text && !transcript.isUtteranceEnd) {
+        try {
+          const result = await geminiService.processMessage(socket.id, transcript.text, session);
+
+          // Add STT latency to the response breakdown
+          if (result.latency) {
+            result.latency.breakdown.stt = transcript.sttLatency || 0;
+            result.latency.total += transcript.sttLatency || 0;
+          }
+
+          await redisService.setSession(session.sessionId, session);
+          socket.emit('response:text', result);
+        } catch (err) {
+          console.error('❌ Failed to route transcript to Gemini:', err.message);
+        }
+      }
     },
     // onError callback
     (error) => {
@@ -156,24 +175,27 @@ function handleAudioStop(socket) {
 
 /**
  * Handle text input (for testing agent without voice)
- * In Step 7, this will be routed to the AI agent
  */
-function handleTextInput(socket, data) {
+async function handleTextInput(socket, data) {
   const session = activeSessions.get(socket.id);
+  if (!session) return;
   const { text } = data;
 
   console.log(`💬 Text input from ${socket.id}: "${text}"`);
 
-  // Echo back for now — will be replaced by agent reasoning in Step 7
-  socket.emit('response:text', {
-    text: `[Echo] You said: "${text}"`,
-    language: session?.language || 'en',
-    timestamp: new Date().toISOString(),
-    latency: {
-      total: 0,
-      breakdown: { echo: 0 }
-    }
-  });
+  try {
+    const result = await geminiService.processMessage(socket.id, text, session);
+    await redisService.setSession(session.sessionId, session);
+    socket.emit('response:text', result);
+  } catch (err) {
+    console.error('❌ Gemini text processing failed:', err.message);
+    socket.emit('response:text', {
+      text: 'Sorry, I am having trouble connecting to my brain right now.',
+      language: session.language,
+      timestamp: new Date().toISOString(),
+      latency: { total: 0, breakdown: { error: 0 } }
+    });
+  }
 }
 
 /**
