@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSocket } from './hooks/useSocket';
+import { useAudioCapture } from './hooks/useAudioCapture';
 import ChatPanel from './components/ChatPanel';
 import './App.css';
 
@@ -8,7 +9,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 function App() {
   const [backendStatus, setBackendStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { isConnected, sessionId, messages, language, sendText, changeLanguage } = useSocket();
+  const { isConnected, sessionId, messages, language, transcript, sendText, changeLanguage, socket } = useSocket();
+  const { isRecording, audioLevel, startRecording, stopRecording } = useAudioCapture(socket);
 
   useEffect(() => {
     checkBackendHealth();
@@ -66,6 +68,11 @@ function App() {
           onChangeLanguage={changeLanguage}
           isConnected={isConnected}
           sessionId={sessionId}
+          isRecording={isRecording}
+          audioLevel={audioLevel}
+          onStartRecording={startRecording}
+          onStopRecording={stopRecording}
+          transcript={transcript}
         />
       </div>
 

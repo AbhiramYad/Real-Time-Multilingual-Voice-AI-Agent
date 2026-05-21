@@ -1,5 +1,5 @@
 const { Server } = require('socket.io');
-const { v4: uuidv4 } = require('crypto');
+const deepgramService = require('./services/deepgram');
 
 /** @type {Server} */
 let io;
@@ -77,29 +77,51 @@ function handleConnection(socket) {
 }
 
 /**
- * Handle audio recording start
+ * Handle audio recording start — opens Deepgram streaming session
  */
-function handleAudioStart(socket) {
+async function handleAudioStart(socket) {
   const session = activeSessions.get(socket.id);
   if (session) {
     session.isRecording = true;
     session.recordingStartedAt = Date.now();
   }
   console.log(`🎙️ Recording started: ${socket.id}`);
+
+  // Start Deepgram streaming session
+  await deepgramService.startSession(
+    socket.id,
+    session?.language || 'en',
+    // onTranscript callback
+    (transcript) => {
+      socket.emit('transcript', {
+        text: transcript.text,
+        isFinal: transcript.isFinal,
+        confidence: transcript.confidence,
+        language: transcript.language,
+        sttLatency: transcript.sttLatency,
+        isUtteranceEnd: transcript.isUtteranceEnd || false,
+        timestamp: transcript.timestamp
+      });
+    },
+    // onError callback
+    (error) => {
+      console.error(`❌ STT error for ${socket.id}:`, error.message);
+      socket.emit('stt:error', { message: 'Speech recognition error. Please try again.' });
+    }
+  );
+
   socket.emit('audio:status', { recording: true });
 }
 
 /**
- * Handle incoming audio data chunk
- * In Step 3, this will be piped to Deepgram STT
+ * Handle incoming audio data chunk — forwards to Deepgram
  */
 function handleAudioData(socket, data) {
-  // Placeholder — will route to STT pipeline in Step 3
-  // For now, acknowledge receipt
+  deepgramService.sendAudio(socket.id, data);
 }
 
 /**
- * Handle audio recording stop
+ * Handle audio recording stop — closes Deepgram session
  */
 function handleAudioStop(socket) {
   const session = activeSessions.get(socket.id);
@@ -110,6 +132,7 @@ function handleAudioStop(socket) {
       : 0;
     console.log(`🛑 Recording stopped: ${socket.id} (${duration}ms)`);
   }
+  deepgramService.stopSession(socket.id);
   socket.emit('audio:status', { recording: false });
 }
 
@@ -148,12 +171,13 @@ function handleLanguageSet(socket, data) {
 }
 
 /**
- * Handle client disconnect
+ * Handle client disconnect — cleanup Deepgram session
  */
 function handleDisconnect(socket, reason) {
   const session = activeSessions.get(socket.id);
   if (session) {
     console.log(`❌ Client disconnected: ${socket.id} (reason: ${reason})`);
+    deepgramService.stopSession(socket.id);
     activeSessions.delete(socket.id);
   }
 }

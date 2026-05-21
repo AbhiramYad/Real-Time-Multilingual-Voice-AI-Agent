@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const http = require('http');
 const { initializeSocket } = require('./socket');
+const deepgramService = require('./services/deepgram');
 
 // Load environment variables
 dotenv.config();
@@ -31,6 +32,9 @@ app.get('/api/health', (req, res) => {
 // Create HTTP server and attach Socket.IO
 const server = http.createServer(app);
 initializeSocket(server);
+
+// Initialize services
+deepgramService.initialize();
 
 // Start server
 server.listen(PORT, () => {

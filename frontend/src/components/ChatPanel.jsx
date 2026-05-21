@@ -8,17 +8,28 @@ const LANGUAGES = [
 ];
 
 /**
- * ChatPanel — Real-time text chat with the voice AI agent
- * Provides text fallback for testing when voice isn't available
+ * ChatPanel — Real-time voice + text chat with the voice AI agent
  */
-function ChatPanel({ messages, onSendText, language, onChangeLanguage, isConnected, sessionId }) {
+function ChatPanel({
+  messages,
+  onSendText,
+  language,
+  onChangeLanguage,
+  isConnected,
+  sessionId,
+  isRecording,
+  audioLevel,
+  onStartRecording,
+  onStopRecording,
+  transcript
+}) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
 
   // Auto-scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, transcript]);
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -32,6 +43,18 @@ function ChatPanel({ messages, onSendText, language, onChangeLanguage, isConnect
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
+    }
+  }
+
+  async function toggleRecording() {
+    if (isRecording) {
+      onStopRecording();
+    } else {
+      try {
+        await onStartRecording();
+      } catch {
+        alert('Microphone access is required for voice input. Please allow microphone access and try again.');
+      }
     }
   }
 
@@ -71,11 +94,11 @@ function ChatPanel({ messages, onSendText, language, onChangeLanguage, isConnect
 
       {/* Messages Area */}
       <div className="chat-messages">
-        {messages.length === 0 && (
+        {messages.length === 0 && !isRecording && (
           <div className="chat-empty">
             <div className="chat-empty-icon">🏥</div>
             <h3>Welcome to VoiceAI Clinic</h3>
-            <p>Type a message or use voice to book, reschedule, or cancel appointments.</p>
+            <p>Type a message or press the microphone to book, reschedule, or cancel appointments.</p>
             <div className="chat-suggestions">
               <button onClick={() => onSendText('Book an appointment with a cardiologist tomorrow')}>
                 📅 Book appointment
@@ -99,6 +122,10 @@ function ChatPanel({ messages, onSendText, language, onChangeLanguage, isConnect
               <div className="message-text">{msg.text}</div>
               <div className="message-meta">
                 {new Date(msg.timestamp).toLocaleTimeString()}
+                {msg.source === 'voice' && <span className="message-source">🎙️ Voice</span>}
+                {msg.sttLatency && (
+                  <span className="message-latency">STT: {msg.sttLatency}ms</span>
+                )}
                 {msg.latency && msg.latency.total > 0 && (
                   <span className="message-latency">⚡ {msg.latency.total}ms</span>
                 )}
@@ -106,24 +133,60 @@ function ChatPanel({ messages, onSendText, language, onChangeLanguage, isConnect
             </div>
           </div>
         ))}
+
+        {/* Live transcript while recording */}
+        {isRecording && transcript?.text && (
+          <div className="chat-message user live-transcript">
+            <div className="message-avatar">🎙️</div>
+            <div className="message-content">
+              <div className="message-text">
+                {transcript.text}
+                {!transcript.isFinal && <span className="typing-indicator">...</span>}
+              </div>
+              <div className="message-meta">
+                Listening...
+                {transcript.sttLatency && (
+                  <span className="message-latency">STT: {transcript.sttLatency}ms</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input Area */}
       <form className="chat-input-area" onSubmit={handleSubmit}>
+        <button
+          type="button"
+          className={`mic-btn ${isRecording ? 'recording' : ''}`}
+          onClick={toggleRecording}
+          disabled={!isConnected}
+          id="mic-button"
+          title={isRecording ? 'Stop recording' : 'Start recording'}
+        >
+          <span className="mic-icon">{isRecording ? '⏹' : '🎙️'}</span>
+          {isRecording && (
+            <span
+              className="mic-level"
+              style={{ transform: `scale(${1 + audioLevel * 0.8})` }}
+            ></span>
+          )}
+        </button>
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isConnected ? 'Type a message...' : 'Connecting...'}
-          disabled={!isConnected}
+          placeholder={isRecording ? 'Listening...' : isConnected ? 'Type a message...' : 'Connecting...'}
+          disabled={!isConnected || isRecording}
           className="chat-input"
           id="chat-text-input"
         />
         <button
           type="submit"
-          disabled={!isConnected || !input.trim()}
+          disabled={!isConnected || !input.trim() || isRecording}
           className="chat-send-btn"
           id="chat-send-button"
         >

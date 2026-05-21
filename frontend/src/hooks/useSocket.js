@@ -3,13 +3,14 @@ import { getSocket, disconnectSocket } from '../services/socket';
 
 /**
  * Custom hook for Socket.IO connection management
- * Provides connection state, session info, and message sending
+ * Provides connection state, session info, transcript, and message sending
  */
 export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [language, setLanguage] = useState('en');
+  const [transcript, setTranscript] = useState({ text: '', isFinal: false });
   const socketRef = useRef(null);
 
   useEffect(() => {
@@ -42,6 +43,33 @@ export function useSocket() {
       }]);
     }
 
+    // Real-time transcript from Deepgram STT
+    function onTranscript(data) {
+      setTranscript({
+        text: data.text,
+        isFinal: data.isFinal,
+        confidence: data.confidence,
+        language: data.language,
+        sttLatency: data.sttLatency
+      });
+
+      // When we get a final transcript, add it as a user message
+      if (data.isFinal && data.text && !data.isUtteranceEnd) {
+        setMessages(prev => [...prev, {
+          role: 'user',
+          text: data.text,
+          timestamp: data.timestamp,
+          source: 'voice',
+          sttLatency: data.sttLatency
+        }]);
+      }
+    }
+
+    // STT error
+    function onSttError(data) {
+      console.error('🔴 STT Error:', data.message);
+    }
+
     // Language update confirmation
     function onLanguageUpdated(data) {
       setLanguage(data.language);
@@ -52,6 +80,8 @@ export function useSocket() {
     socket.on('disconnect', onDisconnect);
     socket.on('session:init', onSessionInit);
     socket.on('response:text', onResponseText);
+    socket.on('transcript', onTranscript);
+    socket.on('stt:error', onSttError);
     socket.on('language:updated', onLanguageUpdated);
 
     // Set initial state
@@ -65,6 +95,8 @@ export function useSocket() {
       socket.off('disconnect', onDisconnect);
       socket.off('session:init', onSessionInit);
       socket.off('response:text', onResponseText);
+      socket.off('transcript', onTranscript);
+      socket.off('stt:error', onSttError);
       socket.off('language:updated', onLanguageUpdated);
     };
   }, []);
@@ -101,6 +133,7 @@ export function useSocket() {
     sessionId,
     messages,
     language,
+    transcript,
     sendText,
     changeLanguage,
     clearMessages,

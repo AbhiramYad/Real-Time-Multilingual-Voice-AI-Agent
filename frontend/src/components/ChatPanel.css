@@ -226,6 +226,71 @@
   color: var(--color-accent-green);
 }
 
+.message-source {
+  color: var(--color-accent-cyan);
+}
+
+/* Mic Button */
+.mic-btn {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-bg-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.mic-btn:hover:not(:disabled) {
+  border-color: var(--color-accent-primary);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.mic-btn.recording {
+  border-color: var(--color-accent-red);
+  background: rgba(239, 68, 68, 0.1);
+  animation: pulse-ring 1.5s ease infinite;
+}
+
+.mic-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mic-icon {
+  font-size: 1.2rem;
+  z-index: 1;
+}
+
+.mic-level {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--color-accent-red);
+  opacity: 0.4;
+  transition: transform 0.1s ease;
+}
+
+/* Live Transcript */
+.live-transcript .message-text {
+  opacity: 0.7;
+  border-style: dashed !important;
+}
+
+.typing-indicator {
+  animation: shimmer 1.5s linear infinite;
+  background: linear-gradient(90deg, var(--color-text-primary) 0%, var(--color-text-muted) 50%, var(--color-text-primary) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 /* Input Area */
 .chat-input-area {
   display: flex;
@@ -233,6 +298,7 @@
   padding: var(--spacing-md) var(--spacing-lg);
   background: var(--color-bg-elevated);
   border-top: 1px solid var(--color-border);
+  align-items: center;
 }
 
 .chat-input {
@@ -304,3 +370,4 @@
     max-width: 85%;
   }
 }
+
