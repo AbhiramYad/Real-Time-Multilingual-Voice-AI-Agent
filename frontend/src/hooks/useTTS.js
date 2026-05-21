@@ -71,24 +71,6 @@ export function useTTS() {
   }, [availableVoices]);
 
   /**
-   * Speak text in the specified language
-   * @param {string} text - Text to speak
-   * @param {string} lang - Language code (en, hi, ta)
-   * @param {Object} options - Optional rate, pitch, volume
-   */
-  const speak = useCallback((text, lang = 'en', options = {}) => {
-    if (!window.speechSynthesis || !text) return;
-
-    // Add to queue
-    queueRef.current.push({ text, lang, options });
-
-    // Process queue if not already processing
-    if (!isProcessingRef.current) {
-      processQueue();
-    }
-  }, [findVoice]);
-
-  /**
    * Process the speech queue sequentially
    */
   function processQueue() {
@@ -134,6 +116,25 @@ export function useTTS() {
 
     window.speechSynthesis.speak(utterance);
   }
+
+  /**
+   * Speak text in the specified language
+   * @param {string} text - Text to speak
+   * @param {string} lang - Language code (en, hi, ta)
+   * @param {Object} options - Optional rate, pitch, volume
+   */
+  const speak = useCallback((text, lang = 'en', options = {}) => {
+    if (!window.speechSynthesis || !text) return;
+
+    // Add to queue
+    queueRef.current.push({ text, lang, options });
+
+    // Process queue if not already processing
+    if (!isProcessingRef.current) {
+      processQueue();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [findVoice]);
 
   /**
    * Stop speaking immediately (barge-in support)

@@ -29,6 +29,44 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+const outboundService = require('./services/outbound');
+
+// Trigger Outbound Campaign
+app.post('/api/outbound/trigger', async (req, res) => {
+  try {
+    const { specialty } = req.body;
+    const result = await outboundService.triggerReminderCampaign(specialty);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Helper to seed a test appointment for outbound calling demos
+app.post('/api/mock/book-test', async (req, res) => {
+  try {
+    const db = require('./services/db');
+    const doctor = (await db.doctors.find())[0];
+    const patient = await db.patients.create({
+      name: 'Rohan Sharma',
+      phone: '+919999999999',
+      preferredLanguage: 'en'
+    });
+
+    const appointment = await db.appointments.create({
+      patientId: patient._id,
+      doctorId: doctor._id,
+      date: '2026-05-22',
+      slot: '10:00 AM',
+      status: 'booked'
+    });
+
+    res.json({ success: true, message: 'Mock appointment seeded for outbound demo!', appointment });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Create HTTP server and attach Socket.IO
 const server = http.createServer(app);
 initializeSocket(server);

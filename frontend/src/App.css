@@ -297,4 +297,449 @@
   .latency-label {
     text-align: center;
   }
+  .campaign-panel {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .campaign-panel::before {
+    width: 100%;
+    height: 4px;
+    left: 0;
+    top: 0;
+  }
+  .campaign-actions {
+    justify-content: center;
+  }
+  .latency-stages {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* =============================================
+   Campaign & Outbound Calling Control Bar
+   ============================================= */
+.campaign-control-container {
+  margin-bottom: var(--spacing-xl);
+}
+
+.campaign-panel {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.campaign-panel:hover {
+  border-color: var(--color-border-hover);
+  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.08);
+}
+
+.campaign-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--gradient-primary);
+}
+
+.campaign-info {
+  flex: 1;
+}
+
+.campaign-info h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-text-primary);
+}
+
+.campaign-info p {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.campaign-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+}
+
+.seed-btn {
+  background: var(--color-bg-secondary);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.seed-btn:hover:not(:disabled) {
+  background: var(--color-bg-card-hover);
+  border-color: var(--color-text-muted);
+  transform: translateY(-2px);
+}
+
+.trigger-btn {
+  background: var(--gradient-primary);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+}
+
+.trigger-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* =============================================
+   Latency Dashboard (Step 10)
+   ============================================= */
+.latency-dashboard-container {
+  margin-top: var(--spacing-xl);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.latency-dashboard {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.latency-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--spacing-md);
+}
+
+.latency-summary h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.total-latency-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.total-latency-metric .metric-val {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--color-accent-green);
+  line-height: 1.1;
+  text-shadow: 0 0 15px var(--color-accent-green-glow);
+}
+
+.total-latency-metric .metric-label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.latency-stages {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-md);
+}
+
+.stage-card {
+  background: rgba(10, 14, 26, 0.4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all var(--transition-base);
+}
+
+.stage-card:hover {
+  border-color: var(--color-border-hover);
+  transform: translateY(-2px);
+}
+
+.stage-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.stage-time {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: var(--spacing-sm) 0;
+}
+
+.stage-bar-container {
+  height: 6px;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.stage-bar {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.4s cubic-bezier(0.1, 0.8, 0.3, 1);
+}
+
+.stage-bar.stt {
+  background: linear-gradient(90deg, var(--color-accent-cyan), #00f0ff);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+.stage-bar.llm {
+  background: linear-gradient(90deg, var(--color-accent-primary), #a855f7);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+
+.stage-bar.tool {
+  background: linear-gradient(90deg, var(--color-accent-amber), #facc15);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+}
+
+.stage-bar.tts {
+  background: linear-gradient(90deg, var(--color-accent-red), #f43f5e);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+/* =============================================
+   Outbound Call Overlay Modal
+   ============================================= */
+.incoming-call-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(5, 7, 12, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.incoming-call-card {
+  background: linear-gradient(135deg, #161a30 0%, #0d1020 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 40px rgba(99, 102, 241, 0.1);
+  position: relative;
+  overflow: hidden;
+  animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.incoming-call-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-accent-primary), var(--color-accent-cyan));
+}
+
+.call-avatar {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(6, 182, 212, 0.2));
+  border: 2px dashed var(--color-accent-cyan);
+  border-radius: 50%;
+  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--spacing-lg);
+  position: relative;
+  z-index: 2;
+}
+
+.incoming-call-card h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.call-info {
+  background: rgba(10, 14, 26, 0.5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  text-align: left;
+}
+
+.call-info p {
+  font-size: 0.95rem;
+  margin-bottom: var(--spacing-sm);
+  color: var(--color-text-secondary);
+  display: flex;
+  justify-content: space-between;
+}
+
+.call-info p:last-child {
+  margin-bottom: 0;
+}
+
+.call-info strong {
+  color: var(--color-text-primary);
+}
+
+/* Pulsing rings for telephone ringing effect */
+.call-pulse-ring {
+  position: absolute;
+  top: 75px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 2px solid rgba(6, 182, 212, 0.3);
+  pointer-events: none;
+  animation: call-pulse 2s cubic-bezier(0.1, 0.8, 0.3, 1) infinite;
+}
+
+@keyframes call-pulse {
+  0% {
+    width: 80px;
+    height: 80px;
+    opacity: 0.8;
+  }
+  100% {
+    width: 240px;
+    height: 240px;
+    opacity: 0;
+  }
+}
+
+.call-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  position: relative;
+  z-index: 2;
+}
+
+.call-actions button {
+  flex: 1;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: none;
+}
+
+.accept-call-btn {
+  background: linear-gradient(135deg, var(--color-accent-green), #059669);
+  color: white;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+}
+
+.accept-call-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+}
+
+.decline-call-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: var(--color-accent-red);
+}
+
+.decline-call-btn:hover {
+  background: var(--color-accent-red);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+/* =============================================
+   Toast Notification
+   ============================================= */
+.toast-notification {
+  position: fixed;
+  bottom: var(--spacing-lg);
+  right: var(--spacing-lg);
+  z-index: 1100;
+  background: rgba(26, 31, 53, 0.9);
+  border: 1px solid var(--color-accent-primary);
+  border-left: 4px solid var(--color-accent-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--color-text-primary);
+  font-weight: 500;
+  font-size: 0.95rem;
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(99, 102, 241, 0.2);
+  backdrop-filter: blur(12px);
+  animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Shared Keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

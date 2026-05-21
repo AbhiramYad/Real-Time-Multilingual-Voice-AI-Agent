@@ -8,9 +8,26 @@ import './App.css';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 function App() {
-  const [backendStatus, setBackendStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { isConnected, sessionId, messages, language, transcript, sendText, changeLanguage, socket } = useSocket();
+  const [campaignLoading, setCampaignLoading] = useState(false);
+  const [seedLoading, setSeedLoading] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const {
+    isConnected,
+    sessionId,
+    messages,
+    language,
+    transcript,
+    incomingCall,
+    latencies,
+    sendText,
+    changeLanguage,
+    acceptCall,
+    declineCall,
+    socket
+  } = useSocket();
+
   const { isRecording, audioLevel, startRecording, stopRecording } = useAudioCapture(socket);
   const { speak, stop: stopTTS } = useTTS();
 
@@ -31,26 +48,70 @@ function App() {
     }
   }, [isRecording, stopTTS]);
 
-  useEffect(() => {
-    checkBackendHealth();
-  }, []);
-
   async function checkBackendHealth() {
     try {
-      const res = await fetch(`${API_URL}/api/health`);
-      const data = await res.json();
-      setBackendStatus(data);
-    } catch {
-      setBackendStatus(null);
+      await fetch(`${API_URL}/api/health`);
+    } catch (err) {
+      console.warn('Backend health check failed:', err);
     } finally {
       setLoading(false);
     }
   }
 
-  const isOnline = backendStatus?.status === 'running';
+  useEffect(() => {
+    checkBackendHealth();
+  }, []);
+
+  // Seeding mock appointment
+  async function handleSeedMock() {
+    setSeedLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/mock/book-test`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showNotice('🌱 Seeded test appointment successfully!');
+      }
+    } catch (err) {
+      console.error('Seeding error:', err);
+      showNotice('❌ Seeding failed. Make sure backend is running.');
+    } finally {
+      setSeedLoading(false);
+    }
+  }
+
+  // Trigger outbound reminder campaign
+  async function handleTriggerCampaign() {
+    setCampaignLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/outbound/trigger`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ specialty: 'Cardiologist' })
+      });
+      const data = await res.json();
+      if (data.callsTriggered > 0) {
+        showNotice(`📞 Campaign triggered! Active calls sent to ${data.callsTriggered} patient(s).`);
+      } else {
+        showNotice('ℹ️ Campaign executed, but no booked appointments found. Try seeding first!');
+      }
+    } catch (err) {
+      console.error('Campaign error:', err);
+      showNotice('❌ Failed to trigger campaign.');
+    } finally {
+      setCampaignLoading(false);
+    }
+  }
+
+  function showNotice(msg) {
+    setNotification(msg);
+    setTimeout(() => setNotification(null), 5000);
+  }
 
   return (
     <div className="app">
+      {/* Toast Notification */}
+      {notification && <div className="toast-notification">{notification}</div>}
+
       {/* Header */}
       <header className="app-header">
         <div className="app-logo">
@@ -78,6 +139,32 @@ function App() {
         </p>
       </section>
 
+      {/* Campaign & Testing Control Bar */}
+      <div className="container campaign-control-container animate-fade-in-delay-1">
+        <div className="campaign-panel">
+          <div className="campaign-info">
+            <h3>📞 Simulated Outbound Calling Campaign</h3>
+            <p>Seed a test booking first, then trigger the campaign to receive a simulated reminder call.</p>
+          </div>
+          <div className="campaign-actions">
+            <button
+              onClick={handleSeedMock}
+              disabled={seedLoading || !isConnected}
+              className="action-btn seed-btn"
+            >
+              {seedLoading ? 'Seeding...' : '1. Seed Demo Appointment'}
+            </button>
+            <button
+              onClick={handleTriggerCampaign}
+              disabled={campaignLoading || !isConnected}
+              className="action-btn trigger-btn"
+            >
+              {campaignLoading ? 'Running Campaign...' : '2. Trigger Outbound Call'}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Chat Panel */}
       <div className="container animate-fade-in-delay-1">
         <ChatPanel
@@ -95,62 +182,72 @@ function App() {
         />
       </div>
 
-      {/* Features */}
-      <div className="features-grid">
-        <div className="feature-card animate-fade-in-delay-1">
-          <div className="feature-icon purple">🎙️</div>
-          <h3>Real-Time Voice Pipeline</h3>
-          <p>
-            Streaming STT with Deepgram, AI reasoning with Gemini,
-            and instant client-side TTS. Full duplex via Socket.IO.
-          </p>
-        </div>
-
-        <div className="feature-card animate-fade-in-delay-2">
-          <div className="feature-icon green">🌐</div>
-          <h3>Multilingual Support</h3>
-          <p>
-            Auto-detects and sustains conversations in English, Hindi,
-            and Tamil. Language preference persists across sessions.
-          </p>
-        </div>
-
-        <div className="feature-card animate-fade-in-delay-3">
-          <div className="feature-icon amber">🧠</div>
-          <h3>Contextual Memory</h3>
-          <p>
-            Redis session memory with TTL for active conversations.
-            MongoDB persistent memory for patient history and preferences.
-          </p>
-        </div>
-
-        <div className="feature-card animate-fade-in-delay-1">
-          <div className="feature-icon cyan">📅</div>
-          <h3>Appointment Management</h3>
-          <p>
-            Full lifecycle: book, reschedule, cancel. Conflict detection,
-            double-booking prevention, and smart alternative suggestions.
-          </p>
-        </div>
-
-        <div className="feature-card animate-fade-in-delay-2">
-          <div className="feature-icon red">📞</div>
-          <h3>Outbound Campaigns</h3>
-          <p>
-            Proactive reminders and follow-up calls. The agent initiates
-            conversations and handles responses naturally.
-          </p>
-        </div>
-
-        <div className="feature-card animate-fade-in-delay-3">
-          <div className="feature-icon blue">⚡</div>
-          <h3>Latency Measurement</h3>
-          <p>
-            Every pipeline stage is timestamped. Real-time latency dashboard
-            shows STT, reasoning, tool execution, and TTS breakdown.
-          </p>
+      {/* Latency Dashboard (Step 10) */}
+      <div className="container latency-dashboard-container animate-fade-in-delay-2">
+        <div className="latency-dashboard">
+          <div className="latency-summary">
+            <h3>⚡ Real-Time Pipeline Latency</h3>
+            <div className="total-latency-metric">
+              <span className="metric-val">{latencies.total}ms</span>
+              <span className="metric-label">Total Latency</span>
+            </div>
+          </div>
+          <div className="latency-stages">
+            <div className="stage-card">
+              <span className="stage-title">🎙️ Audio STT</span>
+              <span className="stage-time">{latencies.stt}ms</span>
+              <div className="stage-bar-container">
+                <div className="stage-bar stt" style={{ width: `${Math.min(100, (latencies.stt / 450) * 100)}%` }}></div>
+              </div>
+            </div>
+            <div className="stage-card">
+              <span className="stage-title">🧠 Gemini LLM</span>
+              <span className="stage-time">{latencies.llm}ms</span>
+              <div className="stage-bar-container">
+                <div className="stage-bar llm" style={{ width: `${Math.min(100, (latencies.llm / 450) * 100)}%` }}></div>
+              </div>
+            </div>
+            <div className="stage-card">
+              <span className="stage-title">🛠️ Tool Call</span>
+              <span className="stage-time">{latencies.tool}ms</span>
+              <div className="stage-bar-container">
+                <div className="stage-bar tool" style={{ width: `${Math.min(100, (latencies.tool / 450) * 100)}%` }}></div>
+              </div>
+            </div>
+            <div className="stage-card">
+              <span className="stage-title">🔊 Client TTS</span>
+              <span className="stage-time">0ms</span>
+              <div className="stage-bar-container">
+                <div className="stage-bar tts" style={{ width: '5%' }}></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Outbound Incoming Call Pulsing Overlay */}
+      {incomingCall && (
+        <div className="incoming-call-overlay">
+          <div className="incoming-call-card">
+            <div className="call-avatar">🏥</div>
+            <h2>Incoming VoiceAI Reminder</h2>
+            <div className="call-info">
+              <p className="patient-name">Patient: <strong>{incomingCall.patientName}</strong></p>
+              <p className="doctor-reminder">Reminder: <strong>Dr. {incomingCall.doctorName}</strong> ({incomingCall.specialty})</p>
+              <p className="time-details">Date: <strong>{incomingCall.date}</strong> at <strong>{incomingCall.slot}</strong></p>
+            </div>
+            <div className="call-pulse-ring"></div>
+            <div className="call-actions">
+              <button onClick={() => acceptCall(incomingCall)} className="accept-call-btn">
+                📞 Answer & Talk
+              </button>
+              <button onClick={declineCall} className="decline-call-btn">
+                ❌ Decline
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tech Stack */}
       <div className="tech-bar animate-fade-in-delay-2">
