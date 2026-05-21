@@ -17,8 +17,11 @@ export function getSocket() {
     return socket;
   }
 
+  const savedSessionId = localStorage.getItem('voice_ai_session_id');
+
   socket = io(BACKEND_URL, {
     transports: ['websocket', 'polling'],
+    query: savedSessionId ? { sessionId: savedSessionId } : {},
     reconnection: true,
     reconnectionAttempts: 10,
     reconnectionDelay: 1000,

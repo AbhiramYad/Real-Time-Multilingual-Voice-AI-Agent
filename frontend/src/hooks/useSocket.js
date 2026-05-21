@@ -29,6 +29,7 @@ export function useSocket() {
     // Session initialization from server
     function onSessionInit(data) {
       setSessionId(data.sessionId);
+      localStorage.setItem('voice_ai_session_id', data.sessionId);
       console.log('📋 Session initialized:', data.sessionId);
     }
 

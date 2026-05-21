@@ -36,6 +36,15 @@ initializeSocket(server);
 // Initialize services
 deepgramService.initialize();
 
+const dbService = require('./services/db');
+const redisService = require('./services/redis');
+
+// Asynchronously connect database and cache
+(async () => {
+  await dbService.connect();
+  redisService.connect();
+})();
+
 // Start server
 server.listen(PORT, () => {
   console.log(`\n🚀 Voice AI Backend running on http://localhost:${PORT}`);

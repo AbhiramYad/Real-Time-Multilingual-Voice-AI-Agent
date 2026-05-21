@@ -1,5 +1,6 @@
 const { Server } = require('socket.io');
 const deepgramService = require('./services/deepgram');
+const redisService = require('./services/redis');
 
 /** @type {Server} */
 let io;
@@ -36,16 +37,33 @@ function initializeSocket(httpServer) {
  * Handle new client connection
  * @param {import('socket.io').Socket} socket
  */
-function handleConnection(socket) {
-  const sessionId = generateSessionId();
+async function handleConnection(socket) {
+  const querySessionId = socket.handshake.query?.sessionId;
+  let sessionId = querySessionId;
+  let sessionData = null;
 
-  // Store session
-  activeSessions.set(socket.id, {
-    sessionId,
-    connectedAt: new Date().toISOString(),
-    language: 'en',
-    isRecording: false
-  });
+  if (querySessionId) {
+    sessionData = await redisService.getSession(querySessionId);
+    if (sessionData) {
+      console.log(`🔄 Session recovered for ${socket.id}: ${querySessionId}`);
+    }
+  }
+
+  if (!sessionData) {
+    sessionId = generateSessionId();
+    sessionData = {
+      sessionId,
+      connectedAt: new Date().toISOString(),
+      language: 'en',
+      isRecording: false
+    };
+  }
+
+  // Bind to socket.id in memory for active connection reference
+  activeSessions.set(socket.id, sessionData);
+
+  // Save session state in Redis
+  await redisService.setSession(sessionId, sessionData);
 
   console.log(`✅ Client connected: ${socket.id} (session: ${sessionId})`);
 
@@ -53,7 +71,7 @@ function handleConnection(socket) {
   socket.emit('session:init', {
     sessionId,
     timestamp: new Date().toISOString(),
-    message: 'Connected to Voice AI Agent'
+    message: sessionData ? 'Session recovered successfully' : 'Connected to Voice AI Agent'
   });
 
   // Handle audio events (pipeline will be wired in later steps)
@@ -161,11 +179,12 @@ function handleTextInput(socket, data) {
 /**
  * Handle language preference change
  */
-function handleLanguageSet(socket, data) {
+async function handleLanguageSet(socket, data) {
   const session = activeSessions.get(socket.id);
   if (session && data.language) {
     session.language = data.language;
     console.log(`🌐 Language set to ${data.language} for ${socket.id}`);
+    await redisService.setSession(session.sessionId, session);
     socket.emit('language:updated', { language: data.language });
   }
 }
