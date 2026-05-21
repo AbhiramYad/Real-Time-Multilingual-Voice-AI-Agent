@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSocket } from './hooks/useSocket';
 import { useAudioCapture } from './hooks/useAudioCapture';
+import { useTTS } from './hooks/useTTS';
 import ChatPanel from './components/ChatPanel';
 import './App.css';
 
@@ -11,6 +12,24 @@ function App() {
   const [loading, setLoading] = useState(true);
   const { isConnected, sessionId, messages, language, transcript, sendText, changeLanguage, socket } = useSocket();
   const { isRecording, audioLevel, startRecording, stopRecording } = useAudioCapture(socket);
+  const { speak, stop: stopTTS } = useTTS();
+
+  // Speak agent response when it arrives
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.role === 'assistant') {
+        speak(lastMsg.text, lastMsg.language || 'en');
+      }
+    }
+  }, [messages, speak]);
+
+  // Barge-in: Stop TTS speaking when user starts recording
+  useEffect(() => {
+    if (isRecording) {
+      stopTTS();
+    }
+  }, [isRecording, stopTTS]);
 
   useEffect(() => {
     checkBackendHealth();
